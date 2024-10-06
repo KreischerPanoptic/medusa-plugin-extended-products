@@ -1,5 +1,5 @@
 import { registerOverriddenValidators } from "@medusajs/medusa"
-import { IsString, IsOptional, IsInt, IsArray, Min, MaxLength, ValidateNested, IsUrl } from "class-validator";
+import { IsOptional, IsInt, IsArray, Min, MaxLength, ValidateNested, IsUrl } from "class-validator";
 import { AdminPostProductsProductReq as MedusaAdminPostProductsProductReq } from "@medusajs/medusa";
 import { ProductProperties } from "../requests/properties";
 

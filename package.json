@@ -1,6 +1,6 @@
 {
   "name": "medusa-plugin-extended-products",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A medusa.js plugin for a small adjustments and extensions of currently used product entity and a new API endpoints",
   "author": "Dennis Soroka",
   "license": "MIT",

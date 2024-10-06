@@ -122,7 +122,7 @@ const getDefaultValues = (
                     if(properties.length > 0) {
                         return {
                             extended_description: product.description ?? '',
-                            visits: product.metadata.visitsCount ? (product.metadata.visitsCount as number) : 0,
+                            visits: product.metadata.visitsCount ? (product.metadata.visitsCount as number) : 1,
                             videos: product.metadata.videoUrls ? (product.metadata.videoUrls as string).split('|') : [],
                             contents: getFieldFromKey(properties, 'contents')?.value ?? '',
                             terms: getFieldFromKey(properties, 'terms')?.value ?? '',
@@ -161,7 +161,7 @@ const getDefaultValues = (
         packaging: '',
         type: '',
         features: '',
-        visits: 0,
+        visits: 1,
         videos: [],
         metadata: getMetadataFormValues({})
     };
