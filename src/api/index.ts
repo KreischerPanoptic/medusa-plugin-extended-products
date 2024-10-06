@@ -4,7 +4,7 @@ import { AdminPostProductsProductReq as MedusaAdminPostProductsProductReq } from
 import { ProductProperties } from "../requests/properties";
 
 class AdminPostProductsProductReq extends MedusaAdminPostProductsProductReq {
-    @IsArray()
+    /*@IsArray()
     @IsUrl({
         require_host: true,
         require_valid_protocol: true,
@@ -26,7 +26,7 @@ class AdminPostProductsProductReq extends MedusaAdminPostProductsProductReq {
 
     @IsInt()
     @Min(0)
-    visits: number;
+    visits: number;*/
 }
 
 registerOverriddenValidators(AdminPostProductsProductReq)
