@@ -4,7 +4,7 @@ import { Lifetime } from "awilix";
 import { Logger } from "@medusajs/types";
 import ProductRepository from "@medusajs/medusa/dist/repositories/product";
 import { 
-  ProductService as MedusaProductService,
+  ProductService,
   OrderService,
   UserService,
   CustomerService,
@@ -53,9 +53,10 @@ export type PageMetadata = {
 
 //export type CountOptions
 
-class ExtendedProductService extends MedusaProductService {
-
+class ExtendedProductService extends TransactionBaseService {
+  static LIFE_TIME = Lifetime.SCOPED
   protected customerService: CustomerService;
+  protected productService: ProductService;
   protected userService: UserService;
   protected orderService: OrderService;
   protected cartService: any;
@@ -67,6 +68,7 @@ class ExtendedProductService extends MedusaProductService {
 
       this.logger = container.logger;
       this.logger.info("✔ Extended products service initialized");
+      this.productService = container.productService;
       this.customerService = container.customerService;
       this.userService = container.userService;
       this.orderService = container.orderService;
@@ -150,7 +152,7 @@ class ExtendedProductService extends MedusaProductService {
       if(!config.relations.includes('variants')) {
         config.relations.push('variants')
       }
-      const products = await super.list(selector, config)
+      const products = await this.productService.list(selector, config)
       return await this.enrich(products);
     }
 
@@ -165,7 +167,7 @@ class ExtendedProductService extends MedusaProductService {
       if(!config.relations.includes('categories')) {
         config.relations.push('categories')
       }
-      const products = await super.list(selector, config)
+      const products = await this.productService.list(selector, config)
 
       let filtered: Product[] = []
 
@@ -289,7 +291,7 @@ class ExtendedProductService extends MedusaProductService {
       if(!config.relations.includes('categories')) {
         config.relations.push('categories')
       }
-      const products = await super.list(selector, config)
+      const products = await this.productService.list(selector, config)
 
       let filtered: Product[] = []
 

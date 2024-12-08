@@ -42,7 +42,11 @@ export const GET = async (
     const page: number = req.query.page ? Number.isNaN(Number.parseInt(`${req.query.page}`)) ? 1 : Number.parseInt(`${req.query.page}`) : 1;
     const count: number = req.query.count ? Number.isNaN(Number.parseInt(`${req.query.count}`)) ? 1 : Number.parseInt(`${req.query.count}`) : 1;
     const categories: string[] = [];
-    req.query;
+    for(let category of `${req.query.categories}`.split(',')) {
+        if(category && category !== 'undefined')
+            categories.push(category)
+    }
+    
     //   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
 
     //   const queryObject = remoteQueryObjectFromString({
