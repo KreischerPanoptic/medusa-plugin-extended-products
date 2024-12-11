@@ -1,13 +1,9 @@
 import { Product as MedusaProduct } from '@medusajs/medusa'
 import {AfterLoad, Entity, OneToMany} from 'typeorm';
-import { ProductReview } from './product-review';
 import {IsArray, IsOptional, IsUrl} from "class-validator";
 
 @Entity()
 export class Product extends MedusaProduct {
-    @OneToMany(() => ProductReview, (productReview) => productReview.product)
-    reviews: ProductReview[]
-
     @IsArray()
     @IsUrl({
         require_host: true,

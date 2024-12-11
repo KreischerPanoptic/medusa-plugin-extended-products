@@ -1,113 +1,103 @@
 import { 
     MedusaRequest, 
-    MedusaResponse
-} from "@medusajs/medusa"
-import ExtendedProductService, { FilteringOptions, DisplayOptions, SortOptions } from "../../../../services/extendedProducts";
+    MedusaResponse 
+} from "@medusajs/medusa";
+import ExtenderService, { 
+    FilteringOptions, 
+    DisplayOptions, 
+    SortOptions 
+} from "../../../../services/extender";
 
-function reTypeSort(sort: string | undefined): 'newest' | 'popular' | 'cheap' | 'expensive'| undefined {
-    switch(sort) {
-        case 'newest':
-            return 'newest';
-        case 'popular':
-            return 'popular';
-        case 'cheap':
-            return 'cheap';
-        case 'expensive':
-            return 'expensive';
-        default:
-            return undefined;
-    }
+// Define valid sort types
+type SortType = 'newest' | 'popular' | 'cheap' | 'expensive';
+
+// Define expected query parameters
+interface ProductsQueryParams {
+    available?: string;
+    sort?: string;
+    page?: string;
+    count?: string;
+    categories?: string;
 }
 
-function reTypeAvailability(available: string | undefined): boolean | undefined {
-    switch(available) {
-        case 'true':
-            return true;
-        case 'false':
-            return false;
-        default:
-            return undefined;
-    }
-}
+// Helper functions with proper typing
+const parseSortType = (sort?: string): SortType | undefined => {
+    const validSortTypes: SortType[] = ['newest', 'popular', 'cheap', 'expensive'];
+    return validSortTypes.includes(sort as SortType) ? sort as SortType : undefined;
+};
+
+const parseBoolean = (value?: string): boolean | undefined => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+};
+
+const parseNumber = (value?: string, defaultValue: number = 1): number => {
+    if (!value) return defaultValue;
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? defaultValue : parsed;
+};
+
+const parseCategories = (categories?: string): string[] => {
+    if (!categories || categories === 'undefined') return [];
+    return categories
+        .split(',')
+        .map(category => category.trim())
+        .filter(Boolean);
+};
 
 export const GET = async (
     req: MedusaRequest,
     res: MedusaResponse
 ) => {
-    // const categoriesService: ProductCategoryService = req.scope.resolve(
-    //     "productCategoryService"
-    //   )
-    const available: boolean | undefined = reTypeAvailability(`${req.query.available}`);
-    const sort: 'newest' | 'popular' | 'cheap' | 'expensive' | undefined = reTypeSort(`${req.query.sort}`)
-    const page: number = req.query.page ? Number.isNaN(Number.parseInt(`${req.query.page}`)) ? 1 : Number.parseInt(`${req.query.page}`) : 1;
-    const count: number = req.query.count ? Number.isNaN(Number.parseInt(`${req.query.count}`)) ? 1 : Number.parseInt(`${req.query.count}`) : 1;
-    const categories: string[] = [];
-    for(let category of `${req.query.categories}`.split(',')) {
-        if(category && category !== 'undefined')
-            categories.push(category)
+    try {
+        const {
+            available,
+            sort,
+            page: pageParam,
+            count: countParam,
+            categories: categoriesParam
+        } = req.query as ProductsQueryParams;
+
+        // Parse and validate query parameters
+        const filter: FilteringOptions = {
+            available: parseBoolean(available),
+            categoriesHandles: parseCategories(categoriesParam) // Updated to use handles instead of IDs
+        };
+
+        const display: DisplayOptions = {
+            page: parseNumber(pageParam, 1),
+            count: parseNumber(countParam, 20) // Added a more reasonable default
+        };
+
+        const sorting: SortOptions = {
+            type: parseSortType(sort)
+        };
+
+        // Get service and fetch data
+        const extenderService: ExtenderService = req.scope.resolve("extenderService");
+        const { data, metadata } = await extenderService.paginateWithMetadata(
+            filter, 
+            sorting, 
+            display
+        );
+
+        // Return response
+        res.status(200).json({
+            products: data,
+            metadata: {
+                ...metadata,
+                page: display.page,
+                count: display.count
+            }
+        });
+
+    } catch (error) {
+        // Proper error handling
+        console.error('Products route error:', error);
+        res.status(500).json({
+            message: 'An error occurred while fetching products',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
-    
-    //   const remoteQuery = req.scope.resolve(ContainerRegistrationKeys.REMOTE_QUERY)
-
-    //   const queryObject = remoteQueryObjectFromString({
-    //     entryPoint: "product_category",
-    //     variables: {
-    //       filters: req.filterableFields,
-    //       ...req.remoteQueryConfig.pagination,
-    //     },
-    //     fields: req.remoteQueryConfig.fields,
-    //   })
-    
-    //   let { metadata } = await remoteQuery(queryObject)
-
-    const extendedProductService: ExtendedProductService = req.scope.resolve(
-       "extendedProductService"
-    )
-    const filter: FilteringOptions = {
-        available: available,
-        categoriesIds: categories
-    }
-    const display: DisplayOptions = {
-        page: page,
-        count: count
-    }
-    const sorting: SortOptions = {
-        type: sort
-    }
-
-    
-
-    // let results = expand ? await categoriesService.listAndCount({}, {take: parseInt(`${limit || '10'}`), skip: parseInt(`${offset || '0'}`), relations: [ `${expand}` ]}) : await categoriesService.listAndCount({}, {take: parseInt(`${limit || '10'}`), skip: parseInt(`${offset || '0'}`)})
-    // let categories = []
-    // results[0].forEach(element => {
-    //     categories.push({
-    //         id: element.id,
-    //         created_at: element.created_at,
-    //         updated_at: element.updated_at,
-    //         parent_category_id: element.parent_category_id,
-    //         rank: element.rank,
-    //         parent_category: element.parent_category,
-    //         category_children: element.category_children,
-    //         products: element.products,
-    //         name: element?.name || '',
-    //         description: element?.description || '',
-    //         thumbnail: element?.metadata?.thumbnailImageUrl || '',
-    //         visits: element?.metadata?.visitsCount || 0,
-    //         handle: element?.handle || '',
-    //         is_active: element?.is_active || false,
-    //         is_internal: element?.is_internal || false,
-    //         metadata: element.metadata,
-    //     })
-    // });
-
-    // categories = categories.sort(function(a, b) {
-    //     return b.visits - a.visits;
-    // })
-    //let results: [ProductCategory[],number] = await categoriesService.listAndCount({i})
-      res.json({
-        page: page ?? 1,
-        count: count ?? 1,
-        pages: await extendedProductService.paginateCounter(filter, count ?? 1),
-        products: await extendedProductService.paginate(filter, sorting, display)
-    })
-}
+};
