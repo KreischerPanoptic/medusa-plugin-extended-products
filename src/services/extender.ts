@@ -142,7 +142,7 @@ class ExtenderService extends TransactionBaseService {
     }
   }
 
-  private async enrich(products: Product[]): Promise<ExtendedProduct[]> {
+  async enrich(products: Product[]): Promise<ExtendedProduct[]> {
     // Batch fetch all orders and customers at once with proper relations
     const [orders, customers] = await Promise.all([
       this.orderRepository_.find({
@@ -204,7 +204,7 @@ class ExtenderService extends TransactionBaseService {
         visits,
         orders: ordersCount,
         wishlisted: wishlistedCount,
-        popularity: (visits * 0.15) + (ordersCount * 0.65) + (wishlistedCount * 0.20),
+        popularity: ordersCount,//(visits * 0.15) + (ordersCount * 0.65) + (wishlistedCount * 0.20),
         properties,
         state: tmpState.every(s => !s.isAvailable) ? 'unavailable' : 'available'
       };
