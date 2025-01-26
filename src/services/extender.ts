@@ -211,6 +211,40 @@ class ExtenderService extends TransactionBaseService {
     });
   }
 
+  private async getProductOrderCounts(): Promise<Map<string, number>> {
+    const orders = await this.orderRepository_.find({
+      relations: ['items', 'items.variant', 'items.variant.product'],
+      where: {
+        status: Not(OrderStatus.CANCELED)
+      },
+      select: {
+        id: true,
+        items: {
+          id: true,
+          variant: {
+            id: true,
+            product_id: true
+          }
+        }
+      }
+    });
+
+    const productOrders = new Map<string, number>();
+    
+    for (const order of orders) {
+      if (!order.items) continue;
+      
+      for (const item of order.items) {
+        if (item.variant?.product_id) {
+          const currentCount = productOrders.get(item.variant.product_id) || 0;
+          productOrders.set(item.variant.product_id, currentCount + 1);
+        }
+      }
+    }
+
+    return productOrders;
+  }
+
   async paginateWithMetadata(
     filter: FilteringOptions,
     sort: SortOptions,
@@ -279,6 +313,31 @@ class ExtenderService extends TransactionBaseService {
 
     const pages = Math.max(1, Math.ceil(total / display.count));
 
+    // if (sort.type === 'popular') {
+    //   // Determine which set of products we need to enrich
+    //   let productsToEnrich: Product[] = [];
+    //   if (filter.available === undefined) {
+    //     productsToEnrich = [...available, ...unavailable];
+    //   } else {
+    //     productsToEnrich = filter.available ? available : unavailable;
+    //   }
+
+    //   // Enrich all relevant products at once
+    //   const enriched = await this.enrich(productsToEnrich);
+      
+    //   // Sort by popularity
+    //   enriched.sort((a, b) => b.popularity - a.popularity);
+
+    //   // Apply pagination after sorting
+    //   const startIndex = (Math.max(0, display.page - 1)) * display.count;
+    //   const paginatedResults = enriched.slice(startIndex, startIndex + display.count);
+
+    //   return {
+    //     data: paginatedResults,
+    //     metadata: { total, pages }
+    //   };
+    // }
+
     // Apply sorting to both arrays
     if (sort.type === 'cheap' || sort.type === 'expensive') {
       const sortByPrice = (products: Product[]) => {
@@ -299,6 +358,20 @@ class ExtenderService extends TransactionBaseService {
 
       available.sort(sortByDate);
       unavailable.sort(sortByDate);
+    } else if (sort.type === 'popular') {
+      // Get order counts for all products
+      const orderCounts = await this.getProductOrderCounts();
+      
+      available.sort((a, b) => {
+        const countA = orderCounts.get(a.id) || 0;
+        const countB = orderCounts.get(b.id) || 0;
+        return countB - countA;
+      });
+      unavailable.sort((a, b) => {
+        const countA = orderCounts.get(a.id) || 0;
+        const countB = orderCounts.get(b.id) || 0;
+        return countB - countA;
+      });
     }
 
     // Calculate pagination
@@ -327,19 +400,12 @@ class ExtenderService extends TransactionBaseService {
         unavailable.slice(startIndex, startIndex + display.count);
     }
 
-    // Enrich and apply popularity sorting if needed
+    // Enrich only the paginated results for non-popularity sorts
     const enriched = await this.enrich(result);
-
-    if (sort.type === 'popular') {
-      enriched.sort((a, b) => b.popularity - a.popularity);
-    }
 
     return {
       data: enriched,
-      metadata: {
-        total,
-        pages
-      }
+      metadata: { total, pages }
     };
   }
 
